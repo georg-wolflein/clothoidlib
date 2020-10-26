@@ -1,6 +1,4 @@
 import numpy as np
-import vg
-import functools
 from scipy.special import fresnel as _fresnel
 
 
@@ -8,7 +6,23 @@ def fresnel(x):
     return tuple(reversed(_fresnel(x)))
 
 
-angle_between = functools.partial(vg.angle, units="rad")
+def angle_between(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
+    """Calculate the angle between two n-dimensional vectors.
+    This method is vectorized, so when supplying matrices, they will be interpreted as collections of vectors.
+
+    Args:
+        v1 (np.ndarray): the first vector
+        v2 (np.ndarray): the second vector
+
+    Returns:
+        np.ndarray: the calculated angle(s)
+    """
+
+    v1 /= np.linalg.norm(v1, axis=-1, keepdims=True)
+    v2 /= np.linalg.norm(v2, axis=-1, keepdims=True)
+    v1 = np.expand_dims(v1, axis=-2)
+    v2 = np.expand_dims(v2, axis=-1)
+    return np.arccos(np.clip(np.matmul(v1, v2), -1., 1.)).reshape(v1.shape[:-2])
 
 
 class ChangeOfBasis:
