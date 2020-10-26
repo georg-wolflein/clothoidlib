@@ -18,6 +18,8 @@ def angle_between(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:
         np.ndarray: the calculated angle(s)
     """
 
+    if v1.size == 0 or v2.size == 0:
+        return np.array([], dtype=np.float)
     v1 /= np.linalg.norm(v1, axis=-1, keepdims=True)
     v2 /= np.linalg.norm(v2, axis=-1, keepdims=True)
     v1 = np.expand_dims(v1, axis=-2)

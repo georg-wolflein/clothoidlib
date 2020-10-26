@@ -20,6 +20,12 @@ def test_angle_between_multiple_2d_vectors():
     assert np.allclose(result, expected)
 
 
+def test_angle_with_empty():
+    v1 = np.array([1., 0])
+    v2 = np.array([])
+    assert angle_between(v1, v2).size == 0
+
+
 def test_angle_between_3d_vectors():
     v1 = np.array([1., 0, 0])
     v2 = np.array([0., 1, 0])
