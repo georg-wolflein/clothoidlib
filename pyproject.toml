@@ -3,6 +3,10 @@ name = "clothoidlib"
 version = "0.1.0"
 description = "A lightweight Python library to calculate clothoid parameters."
 authors = ["Georg Wölflein <georgw7777@gmail.com>"]
+repository = "http://github.com/georgw777/clothoidlib"
+packages = [
+    { include = "clothoidlib" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.6"
