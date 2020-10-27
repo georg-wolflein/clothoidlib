@@ -2,8 +2,9 @@ import numpy as np
 from scipy.special import fresnel as _fresnel
 
 
-def fresnel(x):
-    return tuple(reversed(_fresnel(x)))
+def fresnel(t: np.ndarray) -> np.ndarray:
+    y, x = _fresnel(t)
+    return np.stack([x, y], axis=-1)
 
 
 def angle_between(v1: np.ndarray, v2: np.ndarray) -> np.ndarray:

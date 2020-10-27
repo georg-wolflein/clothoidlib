@@ -32,7 +32,7 @@ class ClothoidCalculator:
 
     def __init__(self, samples: float = 1000, t_max: float = np.sqrt(3)):
         self._t_samples = np.linspace(0, t_max, samples)
-        self._point_samples = np.stack(fresnel(self._t_samples), axis=-1)
+        self._point_samples = fresnel(self._t_samples)
 
         # Calculate clothoid parameters
         gamma1, gamma2, *values = self.compute_clothoid_table(self._t_samples)
@@ -64,7 +64,7 @@ class ClothoidCalculator:
 
         # Calculate points
         ts = np.stack((np.zeros_like(t1), t1, t2), axis=0)
-        p0, p1, p2 = np.stack(fresnel(ts), axis=-1)
+        p0, p1, p2 = fresnel(ts)
 
         # Calculate angles
         gamma1 = angle_between(p1-p0, p1-p2)
@@ -92,13 +92,13 @@ class ClothoidCalculator:
             t0[t1_mask] = associated_t1_values
 
         # Calculate lambdas
-        subgoals = np.stack(fresnel(t0), axis=-1)
+        subgoals = fresnel(t0)
         lambdas = ChangeOfBasis(p1, p2)(subgoals)
 
         return ClothoidParameters(gamma1, gamma2, alpha, beta, t0, t1, t2, *lambdas.T)
 
     def lookup_angles(self, gamma1: np.ndarray, gamma2: np.ndarray) -> ClothoidParameters:
-        """Lookup clothoid parameters by providing the values of gamma1 and gamma2. 
+        """Lookup clothoid parameters by providing the values of gamma1 and gamma2.
         This method is vectorized, so when supplying arrays to gamma1 and gamma2, the parameters will be in array form too.
 
         Args:
@@ -115,7 +115,7 @@ class ClothoidCalculator:
         return ClothoidParameters(*map(np.array, result))
 
     def lookup_points(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray) -> typing.Tuple[ClothoidParameters, np.ndarray]:
-        """Lookup clothoid parameters by providing a triple of points. 
+        """Lookup clothoid parameters by providing a triple of points.
         This method is vectorized, so when supplying arrays of points, the parameters will be in array form too.
 
         Args:
@@ -163,34 +163,28 @@ class ClothoidCalculator:
             np.ndarray: a list of points on the clothoid
         """
 
-        def pad(X: np.ndarray) -> np.ndarray:
-            return np.hstack([X, np.ones((X.shape[0], 1))])
-
-        def unpad(X: np.ndarray) -> np.ndarray:
-            return X[:, :-1]
-
-        def compute_transformation_matrix(I: np.ndarray, O: np.ndarray) -> np.ndarray:
-            A, *_ = np.linalg.lstsq(pad(I), pad(O), rcond=None)
-            return A
-
-        def affine_transform(I: np.ndarray, A: np.ndarray):
-            return unpad(pad(I) @ A)
-
         params, _ = self.lookup_points(start, intermediate, goal)
 
         gamma1, gamma2, alpha, beta, t0, t1, t2, lambda_b, lambda_c = params
-        c0, c1, c2 = map(np.array, zip(
-            *fresnel([np.zeros_like(t1), t1, t2])))
+        c1 = np.array(fresnel(t1)).T
+        c2 = np.array(fresnel(t2)).T
 
-        p0, p1, p2 = np.array(fresnel([t0, t1, t2])).T
+        # Translate output space so that the goal is at the origin
+        start -= goal
+        intermediate -= goal
 
-        P = np.array([goal, intermediate, start])
-        C = np.array([c0, c1, c2])
+        output_space_points = np.array([intermediate, start])
+        clothoid_space_points = np.array([c1, c2])
 
-        A = compute_transformation_matrix(C, P)
-        return affine_transform(np.array(fresnel(np.linspace(0, t2, n_samples))).T, A)
+        # We need to find the transformation matrix from clothoid space to output space
+        M = np.linalg.solve(clothoid_space_points, output_space_points)
 
-    def get_clothoid_point_at_angle(self, params: ClothoidParameters, angle: float) -> typing.Tuple[np.ndarray, np.ndarray]:
+        clothoid_space_samples = np.array(
+            fresnel(np.linspace(0, t2, n_samples))).T
+        output_space_samples = goal + clothoid_space_points @ M
+        return output_space_samples
+
+    def get_clothoid_point_at_angle(self, params: ClothoidParameters, angle: float) -> typing.Tuple[float, float]:
         """Get the point on the clothoid that intersects a line drawn from the start point at a specific angle to the goal line.
 
         Args:
@@ -231,3 +225,6 @@ class ClothoidCalculator:
             local_minima) > 0 else np.argmin(distances, axis=-1)
 
         return t_samples[closest_point_index], point_samples[closest_point_index]
+
+    def calculate_point_distance_to_clothoid(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray, point: np.ndarray) -> np.ndarray:
+        pass

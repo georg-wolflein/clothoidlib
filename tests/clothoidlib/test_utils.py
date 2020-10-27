@@ -1,6 +1,16 @@
 import numpy as np
 
-from clothoidlib.utils import angle_between
+from clothoidlib.utils import angle_between, fresnel
+
+
+def test_fresnel():
+    t = np.linspace(0, np.pi, 100)
+    assert fresnel(t).shape == (100, 2)
+
+
+def test_fresnel_matrix():
+    t = np.linspace(0, np.pi, 100).reshape((5, 20))
+    assert fresnel(t).shape == (5, 20, 2)
 
 
 def test_angle_between_2d_vectors():

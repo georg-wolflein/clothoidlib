@@ -16,3 +16,12 @@ def test_get_clothoid_point_at_angle():
     t, point = calculator.get_clothoid_point_at_angle(params, angle)
 
     assert 0 < t < t2
+
+
+# def test_sample_clothoid():
+#     t1 = .5
+#     t2 = .8
+
+#     start = np.array([0., 0])
+#     intermediate = np.array([1., 1.])
+#     goal = np.array([5., 0])
