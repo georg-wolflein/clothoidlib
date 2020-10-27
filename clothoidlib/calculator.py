@@ -150,6 +150,21 @@ class ClothoidCalculator:
         # Return
         return params, subgoal
 
+    def _project_to_output_space(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray, params: ClothoidParameters, points_in_clothoid_space: np.ndarray) -> np.ndarray:
+        # Translate output space so that the goal is at the origin
+        start = start - goal
+        intermediate = intermediate - goal
+
+        # We need to find the transformation matrix from clothoid space to output space
+        p1 = np.array(fresnel(params.t1)).T
+        p2 = np.array(fresnel(params.t2)).T
+        output_space_points = np.array([intermediate, start])
+        clothoid_space_points = np.array([p1, p2])
+        M = np.linalg.solve(clothoid_space_points, output_space_points)
+
+        points_in_output_space = goal + points_in_clothoid_space @ M
+        return points_in_output_space
+
     def sample_clothoid(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray, n_samples: int = 200) -> np.ndarray:
         """Sample points along the clothoid defined by the triple <start, intermediate, goal>.
 
@@ -165,22 +180,9 @@ class ClothoidCalculator:
 
         params, _ = self.lookup_points(start, intermediate, goal)
 
-        gamma1, gamma2, alpha, beta, t0, t1, t2, lambda_b, lambda_c = params
-        c1 = np.array(fresnel(t1)).T
-        c2 = np.array(fresnel(t2)).T
-
-        # Translate output space so that the goal is at the origin
-        start = start - goal
-        intermediate = intermediate - goal
-
-        output_space_points = np.array([intermediate, start])
-        clothoid_space_points = np.array([c1, c2])
-
-        # We need to find the transformation matrix from clothoid space to output space
-        M = np.linalg.solve(clothoid_space_points, output_space_points)
-
-        clothoid_space_samples = fresnel(np.linspace(0, t2, n_samples))
-        output_space_samples = goal + clothoid_space_samples @ M
+        clothoid_space_samples = fresnel(np.linspace(0, params.t2, n_samples))
+        output_space_samples = self._project_to_output_space(start, intermediate, goal,
+                                                             params, clothoid_space_samples)
         return output_space_samples
 
     def get_clothoid_point_at_angle(self, params: ClothoidParameters, angle: float) -> typing.Tuple[float, float]:
