@@ -187,3 +187,39 @@ class ClothoidCalculator:
 
         A = compute_transformation_matrix(C, P)
         return affine_transform(np.array(fresnel(np.linspace(0, t2, n_samples))).T, A)
+
+    def get_clothoid_point_at_angle(self, params: ClothoidParameters, angle: float, n_samples: int = 200) -> typing.Tuple[np.ndarray, np.ndarray]:
+        """Get the point on the clothoid that intersects a line drawn from the start point at a specific angle to the goal line.
+
+        Args:
+            params (ClothoidParameters): the clothoid parameters
+            angle (float): the angle with the goal line
+            n_samples (int, optional): the number of samples to use. Defaults to 200.
+
+        Returns:
+            typing.Tuple[np.ndarray, np.ndarray]: a tuple of (t, point)
+        """
+
+        t_samples = np.linspace(0, params.t2, n_samples)
+
+        # remove last few samples because we don't want to consider the start point (which by definition lies on the clothoid)
+        t_samples = t_samples[:-np.ceil(n_samples * .01).astype(np.int)]
+        samples_x, samples_y = fresnel(t_samples)
+
+        # the line is given by y = mx + b
+        angle_with_x_axis = params.beta + angle
+        print(angle_with_x_axis)
+        m = np.tan(angle_with_x_axis)
+
+        # calculate b using the fact that the line must pass through the current point: y = mx + b <=> b = y - mx
+        current_point = x, y = fresnel(params.t2)
+        b = y - m * x
+
+        def distance_to_line(x, y):
+            return np.abs(y - m*x - b) / np.sqrt(m**2 + 1)
+
+        distances = distance_to_line(samples_x, samples_y)
+        closest_point_index = np.argmin(distances, axis=-1)
+
+        samples = np.array([samples_x, samples_y]).T
+        return t_samples[closest_point_index], samples[closest_point_index]
