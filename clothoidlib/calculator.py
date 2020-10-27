@@ -170,8 +170,8 @@ class ClothoidCalculator:
         c2 = np.array(fresnel(t2)).T
 
         # Translate output space so that the goal is at the origin
-        start -= goal
-        intermediate -= goal
+        start = start - goal
+        intermediate = intermediate - goal
 
         output_space_points = np.array([intermediate, start])
         clothoid_space_points = np.array([c1, c2])
@@ -179,9 +179,8 @@ class ClothoidCalculator:
         # We need to find the transformation matrix from clothoid space to output space
         M = np.linalg.solve(clothoid_space_points, output_space_points)
 
-        clothoid_space_samples = np.array(
-            fresnel(np.linspace(0, t2, n_samples))).T
-        output_space_samples = goal + clothoid_space_points @ M
+        clothoid_space_samples = fresnel(np.linspace(0, t2, n_samples))
+        output_space_samples = goal + clothoid_space_samples @ M
         return output_space_samples
 
     def get_clothoid_point_at_angle(self, params: ClothoidParameters, angle: float) -> typing.Tuple[float, float]:
