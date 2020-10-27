@@ -22,11 +22,8 @@ class ClothoidParameters(typing.NamedTuple):
     gamma2: np.ndarray
     alpha: np.ndarray
     beta: np.ndarray
-    t0: np.ndarray
     t1: np.ndarray
     t2: np.ndarray
-    lambda_b: np.ndarray
-    lambda_c: np.ndarray
 
 
 class ClothoidCalculator:
@@ -77,28 +74,7 @@ class ClothoidCalculator:
         beta = omega + np.pi - gamma1 - gamma2
         alpha = theta - beta
 
-        # Calculate t0
-        lengths = np.linalg.norm(p2 - p1, axis=-1)
-        t0 = np.zeros_like(t1)
-        for current_t1 in t_samples:
-            t1_mask = t1 == current_t1
-            t2_mask = t2 == current_t1
-            t1_lengths = lengths[t1_mask]
-            t2_lengths = lengths[t2_mask]
-            if t1_mask.sum() == 0 or t2_mask.sum() == 0:
-                continue
-            distance_matrix = euclidean_distances(
-                t1_lengths[:, np.newaxis], t2_lengths[:, np.newaxis])
-            t2_masked_indices = np.argmin(distance_matrix, axis=1)
-            t2_indices = np.arange(len(t2))[t2_mask][t2_masked_indices]
-            associated_t1_values = t1[t2_indices]
-            t0[t1_mask] = associated_t1_values
-
-        # Calculate lambdas
-        subgoals = fresnel(t0)
-        lambdas = ChangeOfBasis(p1, p2)(subgoals)
-
-        return ClothoidParameters(gamma1, gamma2, alpha, beta, t0, t1, t2, *lambdas.T)
+        return ClothoidParameters(gamma1, gamma2, alpha, beta, t1, t2)
 
     def lookup_angles(self, gamma1: np.ndarray, gamma2: np.ndarray) -> ClothoidParameters:
         """Lookup clothoid parameters by providing the values of gamma1 and gamma2.
@@ -122,7 +98,7 @@ class ClothoidCalculator:
         result = gamma1, gamma2, *self._values[i].T
         return ClothoidParameters(*map(np.array, result))
 
-    def lookup_points(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray) -> typing.Tuple[ClothoidParameters, np.ndarray]:
+    def lookup_points(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray) -> ClothoidParameters:
         """Lookup clothoid parameters by providing a triple of points.
         This method is vectorized, so when supplying arrays of points, the parameters will be in array form too.
 
@@ -132,7 +108,7 @@ class ClothoidCalculator:
             goal (np.ndarray): the goal point
 
         Returns:
-            typing.Tuple[ClothoidParameters, np.ndarray]: the calculated parameters and the subgoal location
+            ClothoidParameters: the calculated parameters
         """
 
         # Calculate gamma1 and gamma2
@@ -143,20 +119,8 @@ class ClothoidCalculator:
         # Perform lookup
         params = self.lookup_angles(gamma1, gamma2)
 
-        # Calculate subgoal location
-        *_, lambda_b, lambda_c = params
-        c = start - goal
-        b = intermediate - goal
-        subgoal = goal + lambda_b[..., np.newaxis] * \
-            b + lambda_c[..., np.newaxis] * c
-
-        # When gamma1 is 180° then we approximate the subgoal
-        approximated_subgoal = 2 * intermediate - start
-        mask = np.isclose(np.pi, gamma1)
-        subgoal[mask] = approximated_subgoal[mask]
-
         # Return
-        return params, subgoal
+        return params
 
     def _project_to_output_space(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray, params: ClothoidParameters, points_in_clothoid_space: np.ndarray) -> np.ndarray:
         """Transform points in clothoid space to output space.
@@ -199,7 +163,7 @@ class ClothoidCalculator:
             np.ndarray: a list of points on the clothoid
         """
 
-        params, _ = self.lookup_points(start, intermediate, goal)
+        params = self.lookup_points(start, intermediate, goal)
 
         clothoid_space_samples = fresnel(np.linspace(0, params.t2, n_samples))
         output_space_samples = self._project_to_output_space(start, intermediate, goal,
