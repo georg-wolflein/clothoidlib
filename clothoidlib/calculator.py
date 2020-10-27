@@ -151,6 +151,19 @@ class ClothoidCalculator:
         return params, subgoal
 
     def _project_to_output_space(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray, params: ClothoidParameters, points_in_clothoid_space: np.ndarray) -> np.ndarray:
+        """Transform points in clothoid space to output space.
+
+        Args:
+            start (np.ndarray): the starting point
+            intermediate (np.ndarray): the intermediate sample point
+            goal (np.ndarray): the goal point
+            params (ClothoidParameters): the clothoid parameters
+            points_in_clothoid_space (np.ndarray): points in clothoid space that are to be transformed
+
+        Returns:
+            np.ndarray: the transformed points in output space
+        """
+
         # Translate output space so that the goal is at the origin
         start = start - goal
         intermediate = intermediate - goal
@@ -226,6 +239,3 @@ class ClothoidCalculator:
             local_minima) > 0 else np.argmin(distances, axis=-1)
 
         return t_samples[closest_point_index], point_samples[closest_point_index]
-
-    def get_distance_to_clothoid_envelope(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray, point: np.ndarray) -> np.ndarray:
-        pass
