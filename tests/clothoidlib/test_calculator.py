@@ -1,7 +1,7 @@
 import numpy as np
 
 from clothoidlib.calculator import ClothoidCalculator
-from clothoidlib.utils import fresnel
+from clothoidlib.utils import fresnel, angle_between
 
 calculator = ClothoidCalculator()
 
@@ -12,11 +12,25 @@ def test_get_clothoid_point_at_angle():
     goal = np.array([5., 0])
 
     params, subgoal = calculator.lookup_points(start, intermediate, goal)
-    gamma1, gamma2, alpha, beta, t0, t1, t2, lambda_b, lambda_c = params
     angle = np.pi / 6  # 30°
     t, point = calculator.get_clothoid_point_at_angle(params, angle)
 
-    assert 0 < t < t2
+    assert 0 < t < params.t2
+
+
+def test_get_clothoid_point_at_subgoal_angle():
+    start = np.array([0., 0])
+    intermediate = np.array([2., 1.])
+    goal = np.array([10., 0])
+
+    params, subgoal = calculator.lookup_points(start, intermediate, goal)
+
+    # Find angle of subgoal to goal line
+    angle = angle_between(goal - start, subgoal - start)
+    t, point = calculator.get_clothoid_point_at_angle(params, angle)
+
+    assert np.isclose(t, params.t0)
+    assert np.allclose(point, fresnel(params.t0))
 
 
 def test_sample_clothoid():

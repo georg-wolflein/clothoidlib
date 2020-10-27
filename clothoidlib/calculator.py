@@ -225,5 +225,5 @@ class ClothoidCalculator:
 
         return t_samples[closest_point_index], point_samples[closest_point_index]
 
-    def calculate_point_distance_to_clothoid(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray, point: np.ndarray) -> np.ndarray:
+    def get_distance_to_clothoid_envelope(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray, point: np.ndarray) -> np.ndarray:
         pass
