@@ -7,8 +7,11 @@ from scipy.signal import argrelmin
 from sklearn.metrics.pairwise import euclidean_distances
 import typing
 import functools
+import logging
 
 from .utils import ChangeOfBasis, angle_between, fresnel
+
+logger = logging.getLogger(__name__)
 
 
 class ClothoidParameters(typing.NamedTuple):
@@ -111,6 +114,11 @@ class ClothoidCalculator:
 
         # Query the kd-tree
         d, i = self._tree.query(np.stack([gamma1, gamma2], axis=-1), k=1)
+        i_max_mask = i >= self._values.shape[0]
+        if np.sum(i_max_mask) > 0:
+            logger.info(
+                "At least one query to the k-d tree returned an index that is out of bounds, possibly because the nearest element is the last")
+            i = np.where(i_max_mask, self._values.shape[0] - 1, i)
         result = gamma1, gamma2, *self._values[i].T
         return ClothoidParameters(*map(np.array, result))
 
