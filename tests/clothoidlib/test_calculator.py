@@ -33,3 +33,10 @@ def test_sample_clothoid():
 
     mse = np.mean((result - points)**2)
     assert mse < 1e-5
+
+
+def test_lookup_points_straight_line():
+    start = intermediate = np.array([5., 6.])
+    goal = np.array([10., 10.])
+    params = calculator.lookup_points(start, intermediate, goal)
+    assert all(np.all(x == 0) for x in params)

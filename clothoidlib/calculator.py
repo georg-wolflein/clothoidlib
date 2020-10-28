@@ -88,15 +88,31 @@ class ClothoidCalculator:
             ClothoidParameters: the calculated parameters
         """
 
+        if gamma1.shape != gamma2.shape:
+            raise ValueError("shape mismatch")
+
+        squeezed = len(gamma1.shape) == 0
+        if squeezed:
+            gamma1 = np.expand_dims(gamma1, axis=0)
+            gamma2 = np.expand_dims(gamma2, axis=0)
+        straight_line_mask = (gamma1 == 0) & (gamma2 == 0)
+        gammas = np.stack([gamma1, gamma2], axis=-1)[~straight_line_mask]
+
         # Query the kd-tree
-        d, i = self._tree.query(np.stack([gamma1, gamma2], axis=-1), k=1)
+        d, i = self._tree.query(gammas, k=1)
         i_max_mask = i >= self._values.shape[0]
         if np.sum(i_max_mask) > 0:
             logger.info(
                 "At least one query to the k-d tree returned an index that is out of bounds, possibly because the nearest element is the last")
             i = np.where(i_max_mask, self._values.shape[0] - 1, i)
-        result = gamma1, gamma2, *self._values[i].T
-        return ClothoidParameters(*map(np.array, result))
+        values = np.zeros((gamma1.shape[0], 4))
+        values[~straight_line_mask] = self._values[i]
+        result = gamma1, gamma2, *values.T
+        result = map(np.array, result)
+        if squeezed:
+            result = map(functools.partial(np.squeeze, axis=0), result)
+
+        return ClothoidParameters(*result)
 
     def lookup_points(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray) -> ClothoidParameters:
         """Lookup clothoid parameters by providing a triple of points.
@@ -111,10 +127,19 @@ class ClothoidCalculator:
             ClothoidParameters: the calculated parameters
         """
 
+        straight_line_mask = np.all(start == intermediate, axis=-1)
+        batch_dimensions = max(map(np.shape, (start, intermediate, goal)),
+                               key=len)[:-1]
+
         # Calculate gamma1 and gamma2
         p0, p1, p2 = goal, intermediate, start
-        gamma1 = angle_between(p1-p2, p1-p0)
-        gamma2 = angle_between(p2-p1, p2-p0)
+        p0 = p0[~straight_line_mask]
+        p1 = p1[~straight_line_mask]
+        p2 = p2[~straight_line_mask]
+        gamma1 = np.zeros(batch_dimensions)
+        gamma2 = np.zeros(batch_dimensions)
+        gamma1[~straight_line_mask] = angle_between(p1-p2, p1-p0)
+        gamma2[~straight_line_mask] = angle_between(p2-p1, p2-p0)
 
         # Perform lookup
         params = self.lookup_angles(gamma1, gamma2)
