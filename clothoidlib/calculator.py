@@ -164,12 +164,15 @@ class ClothoidCalculator:
         # Translate output space so that the goal is at the origin
         start = start - goal
         intermediate = intermediate - goal
+        print(start, intermediate, goal)
+        print(points_in_clothoid_space.shape)
 
         # We need to find the transformation matrix from clothoid space to output space
-        p1 = np.array(fresnel(params.t1)).T
-        p2 = np.array(fresnel(params.t2)).T
-        output_space_points = np.array([intermediate, start])
-        clothoid_space_points = np.array([p1, p2])
+        p1 = fresnel(params.t1)
+        p2 = fresnel(params.t2)
+        output_space_points = np.stack([intermediate, start], axis=-2)
+        clothoid_space_points = np.stack([p1, p2], axis=-2)
+        print(clothoid_space_points.shape, output_space_points.shape)
         M = np.linalg.solve(clothoid_space_points, output_space_points)
 
         points_in_output_space = goal + points_in_clothoid_space @ M
@@ -190,9 +193,27 @@ class ClothoidCalculator:
 
         params = self.lookup_points(start, intermediate, goal)
 
-        clothoid_space_samples = fresnel(np.linspace(0, params.t2, n_samples))
-        output_space_samples = self._project_to_output_space(start, intermediate, goal,
-                                                             params, clothoid_space_samples)
+        zeros_mask = params.t2 == 0
+        batch_dimensions = params.t2.shape
+        n_dimensions = start.shape[-1]
+        output_space_samples = np.zeros((*batch_dimensions,
+                                         n_samples, n_dimensions))
+
+        clothoid_space_samples = fresnel(np.linspace(0, params.t2[~zeros_mask],
+                                                     n_samples))
+        clothoid_space_samples = np.moveaxis(clothoid_space_samples, 0, -2)
+        if np.sum(~zeros_mask) > 0:
+            output_space_samples[~zeros_mask] = self._project_to_output_space(start[~zeros_mask],
+                                                                              intermediate[~zeros_mask],
+                                                                              goal[~zeros_mask],
+                                                                              ClothoidParameters(
+                *(x[~zeros_mask] for x in params)),
+                clothoid_space_samples)
+
+        if np.sum(zeros_mask) > 0:
+            output_space_samples[zeros_mask] = start[zeros_mask] + \
+                (goal[zeros_mask] - start[zeros_mask]) * \
+                np.linspace(0., 1., n_samples)[..., np.newaxis]
         return output_space_samples
 
     def get_clothoid_point_at_angle(self, params: ClothoidParameters, angle: float) -> typing.Tuple[float, float]:
