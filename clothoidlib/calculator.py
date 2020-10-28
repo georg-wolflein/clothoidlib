@@ -127,6 +127,8 @@ class ClothoidCalculator:
             ClothoidParameters: the calculated parameters
         """
 
+        start, intermediate, goal = np.broadcast_arrays(
+            start, intermediate, goal)
         straight_line_mask = np.all(start == intermediate, axis=-1)
         batch_dimensions = max(map(np.shape, (start, intermediate, goal)),
                                key=len)[:-1]
