@@ -166,15 +166,12 @@ class ClothoidCalculator:
         # Translate output space so that the goal is at the origin
         start = start - goal
         intermediate = intermediate - goal
-        print(start, intermediate, goal)
-        print(points_in_clothoid_space.shape)
 
         # We need to find the transformation matrix from clothoid space to output space
         p1 = fresnel(params.t1)
         p2 = fresnel(params.t2)
         output_space_points = np.stack([intermediate, start], axis=-2)
         clothoid_space_points = np.stack([p1, p2], axis=-2)
-        print(clothoid_space_points.shape, output_space_points.shape)
         M = np.linalg.solve(clothoid_space_points, output_space_points)
 
         points_in_output_space = goal + points_in_clothoid_space @ M
