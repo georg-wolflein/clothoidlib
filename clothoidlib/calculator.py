@@ -30,7 +30,7 @@ class ClothoidCalculator:
     """Fast and efficient computation of clothoids.
     """
 
-    def __init__(self, samples: float = 1000, t_max: float = np.sqrt(3)):
+    def __init__(self, samples: float = 1000, t_max: float = np.sqrt(5)):
         self._t_samples = np.linspace(0, t_max, samples)
         self._point_samples = fresnel(self._t_samples)
 
@@ -74,7 +74,11 @@ class ClothoidCalculator:
         beta = omega + np.pi - gamma1 - gamma2
         alpha = theta - beta
 
-        return ClothoidParameters(gamma1, gamma2, alpha, beta, t1, t2)
+        # Discard rows where alpha >= 2 * np.pi
+        mask = alpha < 2 * np.pi
+        params = ClothoidParameters(gamma1, gamma2, alpha, beta, t1, t2)
+        params = ClothoidParameters(*(x[mask] for x in params))
+        return params
 
     def lookup_angles(self, gamma1: np.ndarray, gamma2: np.ndarray) -> ClothoidParameters:
         """Lookup clothoid parameters by providing the values of gamma1 and gamma2.
@@ -251,7 +255,7 @@ class ClothoidCalculator:
         distances = distance_to_line(samples_x, samples_y)
 
         # Find local minima in distances
-        local_minima = argrelmin(distances, axis=-1)
+        local_minima, = argrelmin(distances, axis=-1)
         closest_point_index = local_minima[0] if len(
             local_minima) > 0 else np.argmin(distances, axis=-1)
 

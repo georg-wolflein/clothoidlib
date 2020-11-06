@@ -40,3 +40,8 @@ def test_lookup_points_straight_line():
     goal = np.array([10., 10.])
     params = calculator.lookup_points(start, intermediate, goal)
     assert all(np.all(x == 0) for x in params)
+
+
+def test_alpha_less_than_two_pi():
+    alpha = calculator._values[..., 0]
+    assert np.all(alpha < 2 * np.pi)
