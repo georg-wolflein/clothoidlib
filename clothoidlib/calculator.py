@@ -30,12 +30,13 @@ class ClothoidCalculator:
     """Fast and efficient computation of clothoids.
     """
 
-    def __init__(self, samples: float = 1000, t_max: float = np.sqrt(5)):
+    def __init__(self, alpha_max: float = np.pi, samples: float = 1000, t_max: float = np.sqrt(5)):
         self._t_samples = np.linspace(0, t_max, samples)
         self._point_samples = fresnel(self._t_samples)
 
         # Calculate clothoid parameters
-        gamma1, gamma2, *values = self.compute_clothoid_table(self._t_samples)
+        gamma1, gamma2, * \
+            values = self.compute_clothoid_table(self._t_samples, alpha_max)
 
         # Construct kd-tree
         indices = np.array((gamma1, gamma2)).T
@@ -43,11 +44,12 @@ class ClothoidCalculator:
         self._tree = KDTree(indices)
 
     @classmethod
-    def compute_clothoid_table(cls, t_samples: np.ndarray) -> ClothoidParameters:
+    def compute_clothoid_table(cls, t_samples: np.ndarray, alpha_max: float) -> ClothoidParameters:
         """Calculate the clothoid parameter table for a given set of samples for t.
 
         Args:
             t_samples (np.ndarray): the samples
+            alpha_max (float): maximum value of alpha
 
         Returns:
             ClothoidParameters: the computed clothoid parameters
@@ -75,7 +77,7 @@ class ClothoidCalculator:
         alpha = theta - beta
 
         # Discard rows where alpha >= 2 * np.pi
-        mask = alpha < 2 * np.pi
+        mask = alpha <= alpha_max
         params = ClothoidParameters(gamma1, gamma2, alpha, beta, t1, t2)
         params = ClothoidParameters(*(x[mask] for x in params))
         return params
