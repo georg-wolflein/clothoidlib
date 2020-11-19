@@ -1,4 +1,4 @@
 # clothoidlib
-[![georgw777](https://circleci.com/gh/georgw777/clothoidlib.svg?style=svg)](https://app.circleci.com/pipelines/github/georgw777/clothoidlib)
+![Python application](https://github.com/georgw777/clothoidlib/workflows/Python%20application/badge.svg)
 
 Fast and efficient computation of clothoid parameters in Python.
