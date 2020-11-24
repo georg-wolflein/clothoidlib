@@ -14,6 +14,7 @@ numpy = "^1.19.2"
 scipy = "^1.5.3"
 scikit-learn = "^0.23.2"
 matplotlib = "^3.3.2"
+pypersist = "^1.1"
 
 [tool.poetry.dev-dependencies]
 pylint = "^2.6.0"

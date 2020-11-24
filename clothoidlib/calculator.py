@@ -8,6 +8,7 @@ from sklearn.metrics.pairwise import euclidean_distances
 import typing
 import functools
 import logging
+from pypersist import persist
 
 from .utils import ChangeOfBasis, angle_between, fresnel
 
@@ -44,6 +45,7 @@ class ClothoidCalculator:
         self._tree = KDTree(indices)
 
     @classmethod
+    @persist
     def compute_clothoid_table(cls, t_samples: np.ndarray, alpha_max: float) -> ClothoidParameters:
         """Calculate the clothoid parameter table for a given set of samples for t.
 
