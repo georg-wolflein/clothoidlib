@@ -99,6 +99,7 @@ class ClothoidCalculator:
             ClothoidParameters: the clothoid params
         """
 
+        alpha = np.array(alpha)
         squeezed = len(alpha.shape) == 0
         if squeezed:
             alpha = np.expand_dims(alpha, axis=0)
