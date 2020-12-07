@@ -230,10 +230,16 @@ class ClothoidCalculator:
         Returns:
             np.ndarray: the sampled clothoid
         """
+
         zeros_mask = params.t2 == 0
         clothoid_space_samples = fresnel(np.linspace(0, params.t2[~zeros_mask],
                                                      n_samples))
         clothoid_space_samples = np.moveaxis(clothoid_space_samples, 0, -2)
+        if clothoid_space_samples.shape[0] == 0:
+            # Clothoid is a straight line, so we'll just return an arbitrary straight line
+            samples = np.linspace(0, 1, n_samples)
+            samples = np.expand_dims(samples, axis=-1)
+            return samples * np.ones((*params.t2.shape, 2))
         squeezed = len(params.t2.shape) == 0
         if squeezed:
             clothoid_space_samples = np.squeeze(clothoid_space_samples, axis=0)
