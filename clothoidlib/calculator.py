@@ -219,6 +219,25 @@ class ClothoidCalculator:
         points_in_output_space = goal + points_in_clothoid_space @ M
         return points_in_output_space
 
+    def sample_clothoid_in_clothoid_space(self, params: np.ndarray, n_samples: int = 200) -> np.ndarray:
+        """Sample a clothoid in clothoid space.
+
+        Args:
+            params (np.ndarray): the clothoid params
+            n_samples (int, optional): number of samples. Defaults to 200.
+
+        Returns:
+            np.ndarray: the sampled clothoid
+        """
+        zeros_mask = params.t2 == 0
+        clothoid_space_samples = fresnel(np.linspace(0, params.t2[~zeros_mask],
+                                                     n_samples))
+        clothoid_space_samples = np.moveaxis(clothoid_space_samples, 0, -2)
+        squeezed = len(params.t2.shape) == 0
+        if squeezed:
+            clothoid_space_samples = np.squeeze(clothoid_space_samples, axis=0)
+        return clothoid_space_samples
+
     def sample_clothoid(self, start: np.ndarray, intermediate: np.ndarray, goal: np.ndarray, n_samples: int = 200) -> np.ndarray:
         """Sample points along the clothoid defined by the triple <start, intermediate, goal>.
 

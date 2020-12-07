@@ -50,3 +50,13 @@ def test_alpha_less_than_two_pi():
 def test_lookup_alpha():
     alpha = np.array(1.144291)
     assert np.isclose(calculator.lookup_alpha(alpha).alpha, alpha)
+
+
+def test_sample_clothoid_in_clothoid_space():
+    start = np.array([0., 0])
+    intermediate = np.array([1., 1.])
+    goal = np.array([5., 0])
+    params = calculator.lookup_points(start, intermediate, goal)
+    samples = calculator.sample_clothoid_in_clothoid_space(
+        params, n_samples=100)
+    assert samples.shape == (100, 2)
