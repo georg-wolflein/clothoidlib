@@ -37,12 +37,17 @@ class ClothoidCalculator:
 
         # Calculate clothoid parameters
         gamma1, gamma2, * \
-            values = self.compute_clothoid_table(self._t_samples, alpha_max)
+            values = params = self.compute_clothoid_table(
+                self._t_samples, alpha_max)
 
         # Construct kd-tree
         indices = np.array((gamma1, gamma2)).T
         self._values = np.array(values).T
         self._tree = KDTree(indices)
+
+        self._alpha_values = np.array(params).T
+        self._alpha_tree = KDTree(np.expand_dims(
+            np.array(params.alpha), axis=-1))
 
     @classmethod
     @persist
@@ -83,6 +88,35 @@ class ClothoidCalculator:
         params = ClothoidParameters(gamma1, gamma2, alpha, beta, t1, t2)
         params = ClothoidParameters(*(x[mask] for x in params))
         return params
+
+    def lookup_alpha(self, alpha: np.ndarray) -> ClothoidParameters:
+        """Lookup clothoid parameters by providing alpha.
+
+        Args:
+            alpha (np.ndarray): the value(s) of alpha
+
+        Returns:
+            ClothoidParameters: the clothoid params
+        """
+
+        squeezed = len(alpha.shape) == 0
+        if squeezed:
+            alpha = np.expand_dims(alpha, axis=0)
+
+        # Query the kd-tree
+        straight_line_mask = alpha == 0
+        d, i = self._alpha_tree.query(np.expand_dims(alpha, axis=-1), k=1)
+        i_max_mask = i >= self._alpha_values.shape[0]
+        if np.sum(i_max_mask) > 0:
+            logger.info(
+                "At least one query to the k-d tree returned an index that is out of bounds, possibly because the nearest element is the last")
+            i = np.where(i_max_mask, self._alpha_values.shape[0] - 1, i)
+        values = np.zeros((alpha.shape[0], 6))
+        values[~straight_line_mask] = self._alpha_values[i]
+        result = values.T
+        if squeezed:
+            result = map(functools.partial(np.squeeze, axis=0), result)
+        return ClothoidParameters(*result)
 
     def lookup_angles(self, gamma1: np.ndarray, gamma2: np.ndarray) -> ClothoidParameters:
         """Lookup clothoid parameters by providing the values of gamma1 and gamma2.

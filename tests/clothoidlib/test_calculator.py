@@ -45,3 +45,8 @@ def test_lookup_points_straight_line():
 def test_alpha_less_than_two_pi():
     alpha = calculator._values[..., 0]
     assert np.all(alpha < 2 * np.pi)
+
+
+def test_lookup_alpha():
+    alpha = np.array(1.144291)
+    assert np.isclose(calculator.lookup_alpha(alpha).alpha, alpha)
